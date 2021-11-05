@@ -1,3 +1,5 @@
 /.idea/
 /node_modules/
 package-lock.json
+learning-web-api/node_modules/abbrev/LICENSE
+learning-web-api/node_modules/*
