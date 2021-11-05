@@ -81,3 +81,54 @@ const fetchData = async () => {
   }
 }
 ```
+
+## MIMEメディアタイプの指定
+
++ MIMEはMultipurpose Internet Mail Extensionsの略<br>
++ Content-Typeヘッダでメディアタイプを指定（type/subtypeの形式)<br>
++ charsetパラメータは文字エンコーディングを指定<br>
+
+`Content-Type: application/json; charset=utf-8`<br>
+
+|主要なType|意味|type/subtype例|
+|---|---|---|
+|text|人が読んで直接理解できる|text/plain|
+|image|画像データ|image/jpeg|
+|audio|音声データ|audio/mpeg|
+|video|動画データ|video/mp4|
+|Application|その他データ|application/json|
+
+## 様々なヘッダ情報
+
+|ヘッダ種別|例|意味|
+|---|---|---|
+|言語タグ|Content-Language: ja-JP|リソースを表現する自然言語|
+|コンテントネゴシエーション|Accept: text/html, application/xml|クライアントが処理可能なメディアタイプ|
+|ボディの長さ|Content-Length: 447|レスポンスボディのサイズ|
+|チャンク転送|Transfer-Encoding: chunked|大きなデータをチャンク（分けて）転送する|
+
+## HTTP認証のためのヘッダ
+
++ リソースのアクセスに制限がかかっている場合、認証が必要<br>
++ Authorizationヘッダに認証情報を付与する<br>
+
+`Authorization: Basic asdughawudfahjh==` asdughawudfahjh==はbase64エンコードで人には読めないが、簡単にデコードできる<br>
+
+|認証方法|仕様|特徴|
+|---|---|---|
+|Basic認証|base64でエンコードされたユーザーIDとパスワードを使用|簡単にデコードできる HTTPSによる通信暗号化が必須|
+|Digest認証|デコードできないハッシュ化されたパスワードを使用|メッセージは暗号化されないのでHTTPSによる通信暗号化が必須|
+|Barer認証|権限付きのトークンを取得して使用する|OAuth2.0で保護されたリソースなどの認証に使う|
+
+## キャッシュ
+
++ リソースを再利用できる仕組み<br>
++ 現在の使用ではCache-Controlヘッダを使うことがほとんど<br>
++ 検証と再取得の条件を設定する<br>
+
+|指定方法|目的|
+|---|---|
+|Cache-Control: no-store|キャッシュしない|
+|Cache-Control: no-cache|キャッシュするが再検証する|
+|Cache-Control: max-age=86400|相対的な有効期限を設定 単位は秒（86400秒=24時間）|
+|Cache-Control: must-revalidate|必ず検証する|
