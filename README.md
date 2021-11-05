@@ -162,3 +162,86 @@ const fetchData = async () => {
 + APIを実行する簡易フォームを作る<br>
 + 書き込み可能なAPIを開発する<br>
 + より高度なリソース設計について<br>
+
+## 環境構築
+
+### モジュールの概要
+
++ Express : Node.jsのWebアプリケーションフレームワーク<br>
++ sqlite3 : 軽量なRDB(個人開発向け)<br>
++ body-parser : HTMLフォームから送信された値をパース<br>
++ node-dev : ファイル編集を検知してサーバー再起動(ホットリロード)<br>
+
+### $ npm install --save express sqlite3 body-parser (npm インストールする)
+
++ `npm install -g node-dev`を実行<br>
+
++ `package.json`を編集<br>
+
+```
+{
+  "name": "learning-web-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node-dev app/app.js" // 追記
+  },
+  "author": "takaki",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "sqlite3": "^4.2.0"
+  }
+}
+```
+
++ `app/app.js`を作成する<br>
+
+```
+const express = require('express')
+const app = express()
+
+app.get('/api/v1/hello', (req, res) => {
+  res.json({ "message": "Hello, World!" })
+})
+
+const port = process.env.PORT || 3000;
+app.listen(port)
+console.log("Listen on port: " + port)
+```
+
++ `$ npm start`を実行<br>
+
++ `$ curl -X GET http://localhost:3000/api/v1/hello`を叩いてみる<br>
+
+```
+{"message":"Hello, World!"}
+```
+
++ `$ curl -X GET http://localhost:3000/api/v1/hello -v`を叩いてみる<br>
+
+```
+Note: Unnecessary use of -X or --request, GET is already inferred.
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 3000 (#0)
+> GET /api/v1/hello HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/7.64.1
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< X-Powered-By: Express
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 27
+< ETag: W/"1b-9u68i8s9Wl4qBrhqdi8s7jmwKho"
+< Date: Fri, 05 Nov 2021 05:55:15 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+<
+* Connection #0 to host localhost left intact
+{"message":"Hello, World!"}* Closing connection 0
+```
