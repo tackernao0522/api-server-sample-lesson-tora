@@ -132,3 +132,33 @@ const fetchData = async () => {
 |Cache-Control: no-cache|キャッシュするが再検証する|
 |Cache-Control: max-age=86400|相対的な有効期限を設定 単位は秒（86400秒=24時間）|
 |Cache-Control: must-revalidate|必ず検証する|
+
+## 実践編の前提
+
++ SNSのシンプルなAPIを設計・開発する<br>
++ RESTfulなAPIにする<br>
+ `GET`<br>
+ `POST`<br>
+ `PUT`<br>
+ `DELETE`<br>
++ 使用する技術<br>
+ `バックエンド言語 : Node.js`<br>
+ `Webサーバー : Express`<br>
+ `データベース : sqlite3`<br>
+
+## なぜユーザーを扱うのか？
+
++ 今回扱うリソースはUserのみ<br>
++ ほぼ全てのWebサービスに「人」が存在するから<br>
+ `ECアプリ : 人と商品`<br>
+ `SNS : 人と人、人と動画、人と画像...`<br>
++ 変更の多いリソースだから<br>
+
+## 実践編の流れ
+
++ 環境構築をする<br>
++ リソース設計を使用<br>
++ 読み取り可能なAPIを開発する<br>
++ APIを実行する簡易フォームを作る<br>
++ 書き込み可能なAPIを開発する<br>
++ より高度なリソース設計について<br>
