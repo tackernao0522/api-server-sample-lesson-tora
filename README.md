@@ -280,10 +280,12 @@ Note: Unnecessary use of -X or --request, GET is already inferred.
 |---|---|---|
 |GET|/api/v1/users|ユーザーリストの取得|
 |GET|/api/v1/users/123|ユーザー情報の取得|
-|POST|/api/v1/users/123|新規ユーザーの作成|
+|POST|/api/v1/users|新規ユーザーの作成|
 |PUT|/api/v1/users/123|ユーザー情報の更新|
 |DELETE|/api/v1/users/123|ユーザーの削除|
 |GET|/api/v1/search?q=torahack|ユーザー検索結果の取得|
+
+`注 : POSTメソッドのURIを訂正`<br>
 
 ### データベース設計
 
@@ -360,3 +362,177 @@ CREATE TABLE users (
 ```
 
  + `sqlite> `は contorl + Dで切断できる<br>
+
+## GET用API
+
+### GET/api/v1/usersのリソース表現
+
+`全ユーザーのデータがオブジェクトとして配列に入って返ってくる`<br>
+
+```
+[
+  {
+    "id": 1,
+    "name": "Subaru",
+    "profile": "エミリアたんマジ天使！",
+    "created_at": "2020-10-13 07:56:09",
+    "updated_at": "2020-10-13 07:56:09",
+    "date_of_birth: null
+  },
+  {
+    "id": 2,
+    "name": "Emilia",
+    "profile": "もう、素晴のオタンコナス！",
+    "created_at": "2020-10-13 07:56:09",
+    "updated_at": "2020-10-13 07:56:09",
+    "date_of_birth: null
+  }
+]
+```
+
+### GET /api/v1/users/:idのリソース表現
+
+`指定IDにマッチしたデータが単一のオブジェクトとして返ってくる`<br>
+
+`$ curl -X Get http://localhost:3000/api/v1/users/2`<br>
+
+```
+{
+    "id": 2,
+    "name": "Emilia",
+    "profile": "もう、素晴のオタンコナス！",
+    "created_at": "2020-10-13 07:56:09",
+    "updated_at": "2020-10-13 07:56:09",
+    "date_of_birth: null
+  }
+```
+
+### GET /api/v1/searchのリソース表現
+
+`検索にマッチしたデータがオブジェクトとして配列に入って返ってくる`<br>
+
+```
+[
+  {
+    "id": 1,
+    "name": "Subaru",
+    "profile": "エミリアたんマジ天使！",
+    "created_at": "2020-10-13 07:56:09",
+    "updated_at": "2020-10-13 07:56:09",
+    "date_of_birth: null
+  },
+  {
+    "id": 2,
+    "name": "Emilia",
+    "profile": "もう、素晴のオタンコナス！",
+    "created_at": "2020-10-13 07:56:09",
+    "updated_at": "2020-10-13 07:56:09",
+    "date_of_birth: null
+  }
+]
+```
+
+## Node.jsのsqlite3基本メソッド
+
+```
+const dbPath = 'app/db/database.sqlite3'
+const db = new sqlite3.Database(dbPath) : データベース接続開始
+
+db.serialize(() => { // queries }) : 内部のSQLクエリを同期的に実行
+db.all(sql, (err, rows)) : 全ての結果を一度に取得
+db.get(sql, (err, row)) : 一つだけ結果を取得
+db.run(sql, (err)) : SQLクエリを実行
+db.close() : データベース接続を終了
+```
+
+<h5>一度テーブルを削除</h5>
+
+`$ npm run connect` <br>
+
+`sqlite> DROP TABLE users;`<br>
+
+```
+CREATE TABLE users (
+  id INTEGER NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  profile TEXT,
+  created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+  updated_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+  date_of_birth TEXT
+);
+```
+
+<h5>Create sample data</h5>
+
+```
+INSERT INTO users (name, profile) VALUES ("Subaru", "エミリアたんマジ天使！");
+INSERT INTO users (name, profile) VALUES ("Emilia", "もう、スバルのオタンコナス！");
+INSERT INTO users (name, profile) VALUES ("Ram", "はい、スバルくんのレムです。");
+INSERT INTO users (name, profile) VALUES ("Roswaal", "君は私になーぁにを望むのかな？");
+```
+
+<h5>Fetch all data from users table</h5>
+
+`SELECT * FROM users;`で確認<br>
+
+`control + D`で切断<br>
+
+<h5>curl commands</h5>
+
+Get all users: `curl -X GET http://localhost:3000/api/v1/users`<br>
+Get a user by specified id: `curl -X GET http://localhost:3000/api/v1/users/3`<br>
+Search users: `curl -X GET http://localhost:3000/api/v1/search`<br>
+
+<h5>`app.js`の編集</h5>
+
+```
+const express = require('express')
+const app = express()
+const sqlite3 = require('sqlite3')
+const dbPath = "app/db/database.sqlite3"
+
+// Get all users
+app.get('/api/v1/users', (req, res) => {
+  // connect database
+  const db = new sqlite3.Database(dbPath)
+
+  db.all('SELECT * FROM users', (err, rows) => { // 結果がcallbackの引数に入ってくる
+    res.json(rows)
+  })
+
+  db.close()
+})
+
+const port = process.env.PORT || 3000;
+app.listen(port)
+console.log("Listen on port: " + port)
+```
++ `$ npm run start`で確認<br>
+
++ `$ curl -X GET http://localhost:3000/api/v1/users -v`を実行<br>
+
+```
+Note: Unnecessary use of -X or --request, GET is already inferred.
+*   Trying ::1...
+* TCP_NODELAY set
+* Connected to localhost (::1) port 3000 (#0)
+> GET /api/v1/users HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/7.64.1
+> Accept: */*
+> 
+< HTTP/1.1 200 OK
+< X-Powered-By: Express
+< Content-Type: application/json; charset=utf-8
+< Content-Length: 677
+< ETag: W/"2a5-3JW05LCfrf6g8b+KcQFs4hiihAM"
+< Date: Sat, 06 Nov 2021 09:23:57 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+* Connection #0 to host localhost left intact
+[{"id":1,"name":"Subaru","profile":"エミリアたんマジ天使！","created_at":"2021-11-06 18:04:11","updated_at":"2021-11-06 18:04:11","date_of_birth":null},{"id":2,"name":"Emilia","profile":"もう、スバルのオタンコナス！","created_at":"2021-11-06 18:05:32","updated_at":"2021-11-06 18:05:32","date_of_birth":null},{"id":3,"name":"Ram","profile":"はい、スバルくんのレムです。","created_at":"2021-11-06 18:06:22","updated_at":"2021-11-06 18:06:22","date_of_birth":null},{"id":4,"name":"Roswaal","profile":"君は私になーぁにを望むのかな？","created_at":"2021-11-06 18:07:14","updated_at":"2021-11-06 18:07:14","date_of_birth":null}]* Closing connection 0
+```
+
+が返ってくる<br>
+
