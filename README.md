@@ -245,3 +245,118 @@ Note: Unnecessary use of -X or --request, GET is already inferred.
 * Connection #0 to host localhost left intact
 {"message":"Hello, World!"}* Closing connection 0
 ```
+
+## リソースの設計とDB設計
+
+### リソース指向アーキテクチャ
+
+1. Webサービスで利用するデータを特定する<br>
+2. データをリソースに分ける -> リソース設計<br>
+3. リソースにURIで名前をつける -> URI設計<br>
+4. リソースの表現を設計する -> 今回は全てJSONで<br>
+5. リンクとフォームでリソースを結びつける<br>
+6. イベントで標準的なコースを設計する<br>
+7. エラーを想定する<br>
+
+### SNSのデータ特定とリソース設計
+
++ `ユーザー情報`<br>
+  ユーザーID、ユーザー名、プロフィール、写真、誕生日...etc<br>
+
++ `フォロー情報`<br>
+  フォロワーID、フォローID<br>
+
+`今回対象とするリソース`<br>
+
+ 1. ユーザーリソース<br>
+ 2. 検索結果リソース<br>
+
+### URI設計
+
++ /users : ユーザーリソースのURI<br>
++ /search?q= : 検索結果リソースのURI (?qはクエリパラメータ)<br>
+
+|メソッド|URI|詳細|
+|---|---|---|
+|GET|/api/v1/users|ユーザーリストの取得|
+|GET|/api/v1/users/123|ユーザー情報の取得|
+|POST|/api/v1/users/123|新規ユーザーの作成|
+|PUT|/api/v1/users/123|ユーザー情報の更新|
+|DELETE|/api/v1/users/123|ユーザーの削除|
+|GET|/api/v1/search?q=torahack|ユーザー検索結果の取得|
+
+### データベース設計
+
+|フィールド名|データ型|NULL許容|その他|
+|---|---|---|---|
+|id|INTEGER|NOT NULL|PRIMARY KEY|
+|name|TEXT|NOT NULL||
+|profile|TEXT|||
+|date_of_birth|TEXT|||
+|created_at|TEXT|NOT NULL|datetime関数で日付を取得|
+|updated_at|TEXT|NOT NULL|datetime関数で日付を取得|
+
+### CREATE TABLE
+
+```
+CREATE TABLE users (
+  id INTEGER NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  profile TEXT,
+  created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'loaltime')),
+  updated_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+  date_of_birth TEXT
+);
+```
+
+### app/dbディレクトリを作成
+
++ `$ sqlite3 app/db/database.sqlite3`を実行<br>
++ `usersのSQLをターミナルで実行`<br>
+
+```
+CREATE TABLE users (
+  id INTEGER NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  profile TEXT,
+  created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+  updated_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+  date_of_birth TEXT
+);
+```
+
++ `sqlite> .schema`と打つとテーブル情報が確認できる<br>
++ `sqlite> .tables`と打つとテーブル名が確認できる<br>
+
+<h5>データ登録</h5>
+
++ `sqlite> INSERT INTO users (name, profile) VALUES ("Takaki", "I am the back-end engineer.");`
+
+<h5>データ取得</h5>
+
++ `SELECT * FROM users;`<br>
+
+<h5>package.jsonに追加登録</h5>
+
+```
+{
+  "name": "learning-web-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node-dev app/app.js",
+    "connect": "sqlite3 app/db/database.sqlite3" // 追加
+  },
+  "author": "takaki",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "sqlite3": "^4.2.0"
+  }
+}
+```
+
+ + `sqlite> `は contorl + Dで切断できる<br>
