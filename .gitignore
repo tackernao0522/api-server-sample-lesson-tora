@@ -3,3 +3,4 @@
 package-lock.json
 learning-web-api/node_modules/abbrev/LICENSE
 learning-web-api/node_modules/*
+learning-web-api/app/db/database.sqlite3
