@@ -468,6 +468,7 @@ CREATE TABLE users (
 INSERT INTO users (name, profile) VALUES ("Subaru", "エミリアたんマジ天使！");
 INSERT INTO users (name, profile) VALUES ("Emilia", "もう、スバルのオタンコナス！");
 INSERT INTO users (name, profile) VALUES ("Ram", "はい、スバルくんのレムです。");
+INSERT INTO users (name, profile) VALUES ("Rem", "はい、スバルくんのレムです。");
 INSERT INTO users (name, profile) VALUES ("Roswaal", "君は私になーぁにを望むのかな？");
 ```
 
@@ -536,3 +537,310 @@ Note: Unnecessary use of -X or --request, GET is already inferred.
 
 が返ってくる<br>
 
+## 同じサーバーでHTMLを表示する
+
+```
+const path = require('path')
+app.use(express.static(path.join(__dirname, 'public')));
+```
+
+1. path : パス指定用モジュール<br>
+2. express.static() : 静的ファイルのルートディレクトリを設定<br>
+
+`app.js`の編集<br>
+
+```
+const express = require('express')
+const app = express()
+const sqlite3 = require('sqlite3')
+const path = require('path') // 追記
+
+const dbPath = "app/db/database.sqlite3"
+
+app.use(exporess.static(path.join(__dirname, 'public'))) // 追記
+
+// Get all users
+app.get('/api/v1/users', (req, res) => {
+  // connect database
+  const db = new sqlite3.Database(dbPath)
+
+  db.all('SELECT * FROM users', (err, rows) => { // 結果がcallbackの引数に入ってくる
+    res.json(rows)
+  })
+
+  db.close()
+})
+
+// Get a users
+app.get('/api/v1/users/:id', (req, res) => {
+  // connect database
+  const db = new sqlite3.Database(dbPath)
+  const id = req.params.id
+
+  // バッククォーテーションで囲むことによってJavaScriptの変数を使うことができる
+  db.get(`SELECT * FROM users WHERE id = ${id}`, (err, row) => { // 結果がcallbackの引数に入ってくる
+    res.json(row)
+  })
+
+  db.close()
+})
+
+// Search users matching keyword
+app.get('/api/v1/search', (req, res) => {
+  // connect database
+  const db = new sqlite3.Database(dbPath)
+  const keyword = req.query.q
+
+  db.all(`SELECT * FROM users WHERE name LIKE "%${keyword}%"`, (err, rows) => { // 結果がcallbackの引数に入ってくる
+    res.json(rows)
+  })
+
+  db.close()
+})
+
+const port = process.env.PORT || 3000;
+app.listen(port)
+console.log("Listen on port: " + port)
+```
+
++ `app/public/` ディレクトリを作成<br>
+
++ `app/public/index.html`ファイルを作成<br>
+
++ `app/public/js/`ディレクトリを作成<br>
+
++ `app/public/js/index.js`ファイルを作成<br>
+
++ `app/public/js/users.js`ファイルを作成<br>
+
++ `app/public/js/search.js`ファイルを作成<br>
+
+### ディレクトリ構成の確認
+
+1. app.js : Node.js実行ファイル<br>
+
+2. database.sqlite3 : データベースファイル<br>
+
+3. public/ : 静的ファイルのルートディレクトリ<br>
+
+4. index.js : ページ読み込み時に関数を実行<br>
+
+5. search.js : searchリソースのAPIを実行<br>
+
+6. users.js : usersリソースのAPIを実行<br>
+
+`index.html`の編集<br>
+
+```
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:ゼロから始めるWeb API入門実践編</title>
+    <!-- Load scripts -->
+</head>
+
+<body>
+    <main>
+        <h1>Re:ゼロから始めるユーザー管理</h1>
+        <label for="search">ユーザー名で検索</label>
+        <input type="text" id="search" />
+        <button id="search-btn">検索</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ユーザー名</th>
+                    <th>プロフィール</th>
+                    <th>誕生日</th>
+                    <th>登録日時</th>
+                    <th>更新日時</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+
+            </tbody>
+        </table>
+    </main>
+</body>
+
+</html>
+```
+
+`users.js`の編集<br>
+
+```
+// 即時関数でモジュール化
+const usersModule = (() => {
+    const BASE_URL = "http://localhost:3000/api/v1/users";
+
+    return {
+        fetchAllUsers: async () => {
+            const res = await fetch(BASE_URL);
+            const users = await res.json();
+
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                const body = `<tr>
+                                <td>${user.id}</td>
+                                <td>${user.name}</td>
+                                <td>${user.profile}</td>
+                                <td>${user.date_of_birth}</td>
+                                <td>${user.created_at}</td>
+                                <td>${user.updated_at}</td>
+                                </tr>`
+                document.getElementById("users-list").insertAdjacentHTML('beforeend', body);
+            }
+        }
+    }
+})();
+```
+
+`index.js`の編集<br>
+
+```
+const indexModule = (() => {
+    // UsersモジュールのfetchAllUsersメソッドを呼び出す
+    return usersModule.fetchAllUsers();
+})();
+```
+
+`index.html`の編集<br>
+
+```
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:ゼロから始めるWeb API入門実践編</title>
+    <!-- Load scripts -->
+    <script src="js/users.js"></script> // 追記
+    <script src="js/index.js"></script> // 追記
+</head>
+
+<body>
+    <main>
+        <h1>Re:ゼロから始めるユーザー管理</h1>
+        <label for="search">ユーザー名で検索</label>
+        <input type="text" id="search" />
+        <button id="search-btn">検索</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ユーザー名</th>
+                    <th>プロフィール</th>
+                    <th>誕生日</th>
+                    <th>登録日時</th>
+                    <th>更新日時</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+
+            </tbody>
+        </table>
+    </main>
+</body>
+
+</html>
+```
+
+`search.js`の編集<br>
+
+```
+const searchModule = (() => {
+    const BASE_URL = "http://localhost:3000/api/v1/search"
+
+    return {
+        searchUsers: async () => {
+            // 検索窓への入力値を取得
+            const query = document.getElementById('search').value
+
+            const res = await fetch(BASE_URL + '?q=' + query)
+            const result = await res.json()
+
+            let body = ""
+
+            for (let i = 0; i < result.length; i++) {
+                const user = result[i]
+                body += `<tr>
+                            <td>${user.id}</td>
+                            <td>${user.name}</td>
+                            <td>${user.profile}</td>
+                            <td>${user.date_of_birth}</td>
+                            <td>${user.created_at}</td>
+                            <td>${user.updated_at}</td>
+                        </tr>`
+            }
+
+            document.getElementById('users-list').innerHTML = body
+        }
+    }
+})()
+```
+
+`index.js`の編集<br>
+
+```
+const indexModule = (() => {
+    // 検索ボタンをクリックした時のイベントリスナー 設定
+    document.getElementById("search-btn")
+        .addEventListener('click', () => {
+            return searchModule.searchUsers();
+        })
+    // ここまで追記
+
+    // UsersモジュールのfetchAllUsersメソッドを呼び出す
+    return usersModule.fetchAllUsers();
+})();
+```
+
+`index.html`の編集<br>
+
+```
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:ゼロから始めるWeb API入門実践編</title>
+    <!-- Load scripts -->
+    <script src="js/search.js" defer></script> // 追記
+    <script src="js/users.js" defer></script> // 修正
+    <script src="js/index.js" defer></script> // 修正
+</head>
+
+<body>
+    <main>
+        <h1>Re:ゼロから始めるユーザー管理</h1>
+        <label for="search">ユーザー名で検索</label>
+        <input type="text" id="search" />
+        <button id="search-btn">検索</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ユーザー名</th>
+                    <th>プロフィール</th>
+                    <th>誕生日</th>
+                    <th>登録日時</th>
+                    <th>更新日時</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+
+            </tbody>
+        </table>
+    </main>
+</body>
+
+</html>
+```
