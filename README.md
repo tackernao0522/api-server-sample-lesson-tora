@@ -1296,3 +1296,183 @@ const port = process.env.PORT || 3000;
 app.listen(port)
 console.log("Listen on port: " + port)
 ```
+
+## ユーザー作成フォームとAPIを繋げる
+
+`public/index.html`を編集<br>
+
+```
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:ゼロから始めるWeb API入門実践編</title>
+    <!-- Load scripts -->
+    <script src="js/search.js" defer></script>
+    <script src="js/users.js" defer></script>
+    <script src="js/index.js" defer></script>
+</head>
+
+<body>
+    <main>
+        <h1>Re:ゼロから始めるユーザー管理</h1>
+        <label for="search">ユーザー名で検索</label>
+        <input type="text" id="search" />
+        <button id="search-btn">検索</button>
+        <a href="create.html">新規作成</a> // 追加
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ユーザー名</th>
+                    <th>プロフィール</th>
+                    <th>誕生日</th>
+                    <th>登録日時</th>
+                    <th>更新日時</th>
+                </tr>
+            </thead>
+            <tbody id="users-list">
+
+            </tbody>
+        </table>
+    </main>
+</body>
+
+</html>
+```
+
+`public/create.html`を作成<br>
+
+```
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re:ゼロから始めるWeb API入門実践編</title>
+    <!-- Load scripts -->
+    <script src="js/search.js" defer></script>
+    <script src="js/users.js" defer></script>
+    <script src="js/index.js" defer></script>
+</head>
+
+<body>
+    <main>
+        <h1>Re:ゼロから始めるユーザー作成</h1>
+        <label for="uid">ID</label>
+        <input type="text" id="uid" placeholder="自動採番されます" disabled />
+        <label for="name">ユーザー名</label>
+        <input type="text" id="name" />
+        <label for="profile">プロフィール</label>
+        <input type="text" id="profile" />
+        <label for="date_of_birth">誕生日</label>
+        <input type="text" id="date_of_birth" />
+
+        <button id="save-btn">保存する</button>
+        <button id="cancel-btn">キャンセル</button>
+
+    </main>
+</body>
+
+</html>
+```
+
+`users.js`の編集<br>
+
+```
+// 即時関数でモジュール化
+const usersModule = (() => {
+    const BASE_URL = "http://localhost:3000/api/v1/users";
+
+    // ヘッダーの設定の追加
+    const headers = new Headers()
+    headers.set("Content-Type", "application/json")
+    // ここまで追加
+
+    return {
+        fetchAllUsers: async () => {
+            const res = await fetch(BASE_URL);
+            const users = await res.json();
+
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                const body = `<tr>
+                                <td>${user.id}</td>
+                                <td>${user.name}</td>
+                                <td>${user.profile}</td>
+                                <td>${user.date_of_birth}</td>
+                                <td>${user.created_at}</td>
+                                <td>${user.updated_at}</td>
+                                </tr>`
+                document.getElementById("users-list").insertAdjacentHTML('beforeend', body);
+            }
+        },
+        // ここから追加
+        createUser: async () => {
+            const name = document.getElementById("name").value
+            const profile = document.getElementById("profile").value
+            const dateOfBirth = document.getElementById("date_of_birth").value
+
+            // リクエストのbody
+            const body = {
+                name: name,
+                profile: profile,
+                dete_of_birth: dateOfBirth
+            }
+
+            const res = await fetch(BASE_URL, {
+                method: "POST", // getの時は必要なかった
+                headers: headers,
+                body: JSON.stringify(body)
+            })
+
+            const resJson = await res.json()
+
+            alert(resJson.message)
+            window.location.href = "/"
+        }
+        ここまで追加
+    }
+})();
+```
+
+`index.js`の編集<br>
+
+```
+const indexModule = (() => {
+    const path = window.location.pathname // 追記
+
+    // ここから編集
+    switch (path) {
+        case '/':
+            // 検索ボタンをクリックした時のイベントリスナー 設定
+            document.getElementById("search-btn")
+                .addEventListener('click', () => {
+                    return searchModule.searchUsers();
+                })
+
+            // UsersモジュールのfetchAllUsersメソッドを呼び出す
+            return usersModule.fetchAllUsers();
+
+        case '/create.html':
+            document.getElementById("save-btn")
+                .addEventListener('click', () => {
+                    return usersModule.createUser();
+                })
+            document.getElementById("cancel-btn")
+                .addEventListener('click', () => {
+                    return window.location.href = '/';
+                })
+            break;
+
+        default:
+            break;
+    }
+    // ここまで編集
+})();
+```
